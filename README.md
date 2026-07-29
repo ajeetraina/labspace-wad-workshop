@@ -1,111 +1,138 @@
-# Securing the Agentic Stack — Workshop Lab Repo
+# Securing the Agentic Stack — Labspace
 
-Hands-on lab materials for the **Securing the Agentic Stack** workshop.
+Workshop labspace for **Securing the Agentic Stack: Docker Hardened Images and Supply
+Chain Security** (WeAreDevelopers), by Ajeet Raina.
+
+An AI agent containerises a real application without supervision. You spend the next
+ninety minutes finding out what it shipped, and turning it into something you can
+prove things about.
+
+## Run it
+
+```bash
+bash start-labspace.sh          # then open http://localhost:3030
+bash start-labspace.sh down     # stop and clean up
+```
+
+Or, once published:
+
+```bash
+docker compose -f oci://ajeetraina/labspace-wad-workshop up
+```
 
 ## Structure
 
 ```
-labspace-agentic-security/
-├── compose.yaml                     # Labspace runtime (Gitea-enabled variant)
-├── compose.override.yaml
-├── docker-scout-policy.yaml         # Scout build policies
-├── .gitea/workflows/
-│   └── secure-build.yaml            # Secure CI pipeline (Gitea Actions)
-├── labspace/                        # Step-by-step lab guides
-│   ├── labspace.yaml                # Labspace manifest
+.
+├── labspace/                       # Section content (left panel)
+│   ├── labspace.yaml
 │   ├── 01-introduction.md
 │   ├── 02-setup.md
-│   ├── 03-lab-migrate-dhi.md        # Lab 1: Migrate to DHI
-│   ├── 04-lab-sbom-attestations.md  # Lab 2: SBOM + signatures
-│   ├── 05-lab-ci-policy.md          # Lab 3: Gitea Actions CI pipeline
-│   ├── 06-lab-mcp-dhi.md            # Lab 4: MCP server on DHI
-│   └── 07-conclusion.md
-└── lab/
-    ├── 01-migrate/Dockerfile        # Lab 1 starting point
-    ├── 02-attest/Dockerfile         # Lab 2 starting point
-    ├── 03-policy/Dockerfile         # Lab 3 — standard base (will fail)
-    └── 04-mcp/
-        ├── Dockerfile               # MCP server on DHI
-        ├── docker-compose.yml       # Hardened runtime config
-        ├── requirements.txt
-        └── src/mcp_server.py        # Sample MCP server
-
+│   ├── 03-demo-agent-builds-it.md  # Recorded agent demo
+│   ├── 04-lab-sbom-vex-slsa.md     # Lab 1 — vocabulary
+│   ├── 05-lab-dhi-migration.md     # Lab 2 — the pivot
+│   ├── 06-lab-ci-policy.md         # Lab 3 — sign and gate
+│   ├── 07-lab-mcp-dhi.md           # Lab 4 — agentic stack
+│   └── 08-conclusion.md
+├── project/                        # THE WORKSPACE ROOT (see below)
+│   ├── docker-scout-policy.yaml
+│   └── mcp/                        # Catalog MCP server
+├── compose.yaml                    # SDLC base
+├── compose.override.yaml
+└── start-labspace.sh
 ```
 
-## Prerequisites
+> [!IMPORTANT]
+> **`project/` is the workspace root.** Files here mount at `/home/coder/project/`,
+> and the terminal opens there. Instructions must never say `cd project` or reference
+> a `project/` path prefix. There is no clone step in this workshop.
 
-- Docker Desktop 4.30+
-- Docker Hub account (free) with Docker Scout enabled on your org
-- `cosign` CLI installed (`brew install cosign`)
+## Before first boot
 
-> Lab 3 runs its CI pipeline on a **self-hosted Gitea** bundled in the labspace
-> (`git.dockerlabs.xyz`) with a local registry (`registry.dockerlabs.xyz`) — no
-> GitHub account needed.
-
-## Quick start
+**1. Create the app fork.** `compose.override.yaml` sets `PROJECT_CLONE_URL` to
+`https://github.com/ajeetraina/catalog-service-wad`, which does not exist yet. Create
+it:
 
 ```bash
-git clone https://github.com/ajeetraina/labspace-agentic-security
-cd labspace-agentic-security
-bash start-labspace.sh          # then open http://localhost:3030
+git clone https://github.com/dockersamples/catalog-service-node catalog-service-wad
+cd catalog-service-wad
+rm -rf demo/            # the patch-based vulnerable state is not used here
 ```
 
-Or run it manually:
+Then run the agent (see below), commit the Dockerfile it writes, and push the fork.
+
+Also copy `project/mcp/` and `project/docker-scout-policy.yaml` into that fork, since
+the clone populates the workspace.
+
+**2. Record the agent building the baseline.** This produces both the opening demo and
+the artifact every lab measures.
 
 ```bash
-docker login
-docker scout config organization YOUR_ORG
+cd catalog-service-wad
+rm Dockerfile
+# start recording, then run your coding agent with exactly:
+#
+#   Containerise this Node.js application for production.
+#   Add a Dockerfile and build the image as catalog-service:baseline.
+#
+# No other instructions. Let it finish. Do not correct it.
 ```
 
-The complete workshop is also hosted at **https://dockerworkshop.vercel.app/**.
+Then capture the numbers that go into section 03:
 
-## Facilitator smoke test (run before a live workshop)
+```bash
+docker scout quickview catalog-service:baseline
+docker scout policy catalog-service:baseline
+npm ls --all --parseable 2>/dev/null | wc -l
+docker images catalog-service:baseline
+```
 
-Lab 3 depends on the bundled Gitea + runner + registry from the `:dev-sdlc`
-runtime variant. Verify it once before presenting — a few values (notably the
-seeded Gitea repo name) come from the runtime image, not this repo:
+> If the agent writes a *good* Dockerfile, keep it. A competent multi-stage build makes
+> the demo stronger — the vulnerabilities are in the dependency tree either way, and
+> "can you prove where this came from" still has no answer.
 
-1. **Boot it:** `bash start-labspace.sh`, then open http://localhost:3030.
-2. **Gitea is up:** open http://git.dockerlabs.xyz and log in as `moby` / `moby1234`.
-3. **Registry is up:** `curl -s http://registry.dockerlabs.xyz/v2/_catalog` returns JSON.
-4. **Confirm the seeded repo path:** in the workspace terminal run `git remote -v`.
-   Lab 3's image tag uses `${{ github.repository }}`, so it auto-follows this
-   path — but confirm it resolves to `moby/<repo>` as the lab text assumes.
-5. **Pre-configured secrets exist:** in the Gitea repo → Settings → Actions →
-   Secrets, confirm `DOCKER_REGISTRY`, `DOCKER_USERNAME`, `DOCKER_PASSWORD`.
-6. **Scout gate needs cloud auth (not offline):** the Scout step is a real cloud
-   call, so add `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, and `DOCKER_SCOUT_ORG`
-   as repo secrets, plus `COSIGN_PRIVATE_KEY` / `COSIGN_PASSWORD` for signing
-   (see Lab 3, Step 2). Do a full push once to confirm the pipeline goes green.
+**3. Fill in the VERIFY placeholders.**
 
-> If the seeded repo name or secret names differ in your runtime image, adjust
-> Lab 3's Step 1–2 text accordingly.
+```bash
+grep -rn "VERIFY" labspace/
+```
 
-## Workshop deck
+Each marks a number that must come from a real run rather than an estimate.
 
-The companion slide deck is **"Securing the Agentic Stack: Docker Hardened Images
-and Supply Chain Security"** by Ajeet Raina. The six-part agenda maps directly to
-the labspace sections:
+## Facilitator checklist
 
-| Deck section | Labspace |
-|--------------|----------|
-| 01 · Why supply chain security matters now | Introduction |
-| 02 · Building blocks (SBOM · VEX · SLSA) | Lab 2 |
-| 03 · Standard image vs DHI | Lab 1 |
-| 04 · Securing your CI pipeline | Lab 3 |
-| 05 · Securing the agentic stack | Lab 4 |
-| 06 · Wrap up | Conclusion |
+- [ ] App fork created, agent's Dockerfile committed, `PROJECT_CLONE_URL` correct
+- [ ] Agent run recorded, under two minutes
+- [ ] All `VERIFY` placeholders replaced with measured values
+- [ ] DHI tags in Labs 2 and 4 confirmed against the current catalogue
+- [ ] Both tier buttons tested — free (`dhi.io/`) and paid (`$$org$$/dhi-`)
+- [ ] Gitea reachable, `moby` / `moby1234` works, pipeline runs green once
+- [ ] `docker mcp gateway run --verify-signatures` confirmed, or Lab 4 step demoted to demo
+- [ ] Lab 3 pipeline run recorded as a fallback — the Scout gate is a live cloud call
+- [ ] Day 0 state does not collide with day X
 
-## Source material
+## Timing
 
-Adapted from [`ajeetraina/labspace-container-security`](https://github.com/ajeetraina/labspace-container-security)
-which covers 8 container security best practices using `catalog-service-node`.
+| Section | Format | Time |
+|---------|--------|------|
+| Introduction | read | 3 min |
+| Setup | pre-work | — |
+| An Agent Built This | demo | 5 min |
+| Lab 1 — SBOM, VEX, SLSA | hands-on | 16 min |
+| Lab 2 — Trusted base | hands-on | 16 min |
+| Lab 3 — Sign and gate | demo | 10 min |
+| Lab 4 — Agentic stack | hands-on | 14 min |
+| Conclusion | read | 5 min |
 
-## Resources
+**69 minutes**, leaving room for overrun and transitions inside the 90.
 
-- [Docker Hardened Images](https://docs.docker.com/dhi/)
-- [Docker Scout](https://docs.docker.com/scout/)
-- [MCP Catalog on Docker Hub](https://hub.docker.com/mcp)
-- [SLSA framework](https://slsa.dev)
-- [Cosign — image signing](https://docs.sigstore.dev/cosign/)
-- [State of Agentic AI Report](https://docker.com/resources/the-state-of-agentic-ai-white-paper)
+## Authoring
+
+`CLAUDE.md` holds the conventions. Two slash commands are available:
+
+- `/check-labspace` — audit every file against the conventions
+- `/new-section` — author a new section consistently
+
+## Licence
+
+Apache-2.0

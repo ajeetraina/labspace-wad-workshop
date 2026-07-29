@@ -1,0 +1,42 @@
+metadata:
+  id: securing-the-agentic-stack
+  sourceRepo: github.com/ajeetraina/labspace-wad-workshop
+  contentVersion: 1.0.0
+
+title: "Securing the Agentic Stack"
+description: >
+  Take one real application from an image an AI agent built without supervision to a
+  signed, attested, policy-gated artifact - then extend the same guarantees to the
+  tools your agent calls.
+
+sections:
+  - title: Introduction
+    contentPath: 01-introduction.md
+  - title: Setup
+    contentPath: 02-setup.md
+  - title: "An Agent Built This"
+    contentPath: 03-demo-agent-builds-it.md
+  - title: "Lab 1 - What Is In It? SBOM, VEX, SLSA"
+    contentPath: 04-lab-sbom-vex-slsa.md
+  - title: "Lab 2 - Start From a Trusted Base"
+    contentPath: 05-lab-dhi-migration.md
+  - title: "Lab 3 - Sign It, Then Gate It"
+    contentPath: 06-lab-ci-policy.md
+  - title: "Lab 4 - Securing the Agentic Stack"
+    contentPath: 07-lab-mcp-dhi.md
+  - title: "Conclusion"
+    contentPath: 08-conclusion.md
+
+services:
+  - id: app
+    title: Catalog API
+    url: http://localhost:3050
+    icon: inventory_2
+  - id: gitea
+    title: Gitea
+    url: http://git.dockerlabs.xyz
+    icon: account_tree
+  - id: registry
+    title: Registry
+    url: http://registry.dockerlabs.xyz
+    icon: storage

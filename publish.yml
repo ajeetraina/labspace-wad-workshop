@@ -1,0 +1,27 @@
+name: Publish Labspace
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DOCKERHUB_REPO: ajeetraina/labspace-wad-workshop
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Publish Labspace
+        uses: dockersamples/publish-labspace-action@v2
+        with:
+          labspace_base_version: latest-sdlc
+          target_repo: ${{ env.DOCKERHUB_REPO }}

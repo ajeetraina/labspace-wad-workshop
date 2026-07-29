@@ -1,6 +1,5 @@
-# The :dev-sdlc content-dev variant bundles a self-hosted Gitea, a Gitea Actions
-# runner, and a local container registry (git.dockerlabs.xyz / registry.dockerlabs.xyz)
-# used by Lab 3 — Securing Your CI Pipeline.
 include:
-  - oci://dockersamples/labspace-content-dev:dev-sdlc
+  # SDLC variant: adds Gitea, a container registry, k3s and Traefik.
+  # Lab 3 needs a real CI pipeline, so the base variant is not enough.
+  - oci://dockersamples/labspace-content-dev:latest-sdlc
   - ./compose.override.yaml
