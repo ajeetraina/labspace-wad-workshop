@@ -1,125 +1,90 @@
-# Introduction
+# Securing the Agentic Stack
 
-👋 Welcome to **Securing the Agentic Stack: Docker Hardened Images & Supply Chain Security**!
+Something built the application in this workspace, and it was not you.
 
-This workshop walks you through supply chain security fundamentals and applies
-them to real workloads — both a traditional Node.js service and a Python MCP server
-that an AI agent calls at runtime.
+An AI agent was handed a Node.js project and one instruction: *containerise this for
+production*. Ninety seconds later it had chosen a base image, resolved several hundred
+packages, written a Dockerfile, and built successfully. Nothing failed. Nothing warned.
 
----
+Over the next ninety minutes you will find out what it actually shipped, and turn it
+into something you can prove things about.
 
-## Why supply chain security matters now
+## What changed
 
-> *Especially when agents are doing the pulling.*
-
-Agentic AI systems pull dependencies, invoke tools, and build environments
-**autonomously** — without a human reviewing each step. One compromised base image
-or MCP server can give an attacker access to production credentials, filesystems,
-and external APIs with no human in the loop.
-
-> *"The better the agent, the bigger the blast radius."*
-
-### Agents expand your attack surface, automatically
+The software supply chain did not change. The review step did.
 
 | Traditional workflow | Agentic workflow |
-|----------------------|------------------|
-| Developer pulls base image — manually, with intent | Agent pulls base image — **autonomously** |
-| Developer installs dependencies — reviewed in a PR | Agent installs packages — **no human review** |
-| CI pipeline runs — with human-authored config | Agent invokes external tools — **with real credentials** |
-| | Agent modifies the Dockerfile — **mid-pipeline** |
+|---------------------|------------------|
+| A developer picks a base image, with intent | An agent picks one, autonomously |
+| Dependencies are reviewed in a pull request | Packages are resolved with no human review |
+| CI runs configuration a human wrote | The agent wrote the Dockerfile |
+| | The agent modifies it again mid-pipeline |
 
----
+> **The better the agent, the bigger the blast radius.**
 
-## Three problems every security team knows
+Note that the agent does not have to do anything *wrong* for this to be a problem.
+Suppose it wrote an excellent Dockerfile — non-root, multi-stage, minimal. The
+vulnerabilities are in the dependency tree either way, and you still cannot say where
+any of it came from.
 
-| Integrity | Excessive attack surface | Operational overhead |
-|-----------|--------------------------|----------------------|
-| How do you know every component is exactly what it claims to be and has not been tampered with in transit? | General-purpose base images ship 500+ packages, most unused by your app. Every package is a potential CVE. | Security teams flooded with CVEs. Developers spend more time patching than building. Real work grinds to a halt. |
+## The three questions
 
----
+Every tool in this workshop answers exactly one of these:
 
-## The security gap is already here
+| Question | Answer |
+|----------|--------|
+| **What is in it?** | SBOM |
+| **Where did it come from?** | SLSA provenance |
+| **Can you verify that claim?** | Signatures |
 
-**Docker State of Agentic AI Report — 800+ developers & tech leaders:**
+And a fourth, once you have the first three: *which of these vulnerabilities actually
+affects me?* → **VEX**
 
-| Stat | Figure |
-|------|--------|
-| Already have AI agents in production | **60%** |
-| Cite security as the #1 challenge scaling agentic AI | **40%** |
-| Know MCP but can't deploy it securely at scale | **85%** |
-| Use containers for agent development or production | **94%** |
-| Call agentic AI a strategic priority | 94% |
-| Can't ensure the tools their agents use are secure | 45% |
+Keep them in view. Every command you run maps to one.
 
-*Source: Docker State of Agentic AI Report · docker.com/resources/the-state-of-agentic-ai-white-paper*
+## Your journey
 
-And the broader software supply chain is under the same pressure:
+| Lab | Question | What the catalog gains |
+|-----|----------|------------------------|
+| — | What did the agent do? | A measurement |
+| 1 | What is in it, and what matters? | SBOM, VEX and provenance you can read |
+| 2 | Can you start from something better? | **A hardened base — the pivot** |
+| 3 | How do you stop it regressing? | A signature and a gate that fails closed |
+| 4 | What about the tools the agent calls? | A hardened MCP server |
 
-| Stat | Figure |
-|------|--------|
-| Applications that include open source components | **96%** |
-| Share of a typical application's code that is open source | **70–90%** |
-| New malicious packages identified in 2025 alone | **454,648** |
-| Open-source malware packages logged since 2019 | **123,219** |
+**Lab 2 is the centre of gravity.** Lab 1 teaches you to measure an image. Lab 2 is
+where the measurement pays off, and every number you wrote down changes.
 
-*Source: The State of Software Supply Chain Report 2026 by Sonatype*
+## What you will be able to do
 
----
+- Surface CVE exposure with Docker Scout on a real Node.js service
+- Generate, read and query SBOMs, and tell an attested one from an indexed one
+- Read VEX statements and explain why most findings are not your problem
+- Trace an image to the source commit that produced it, and verify the signature
+- Migrate to Docker Hardened Images and measure exactly what changed
+- Sign with cosign, and watch verification catch a moved tag
+- Enforce a build policy that fails closed in CI
+- Harden an MCP server so an agent's tool surface carries the same guarantees
 
-## The "software supply chain" in practice
+## Check your environment
 
-- Software is built from multiple parts, dependencies, and open source components.
-- All software contains vulnerabilities — both known and unknown.
-- Software development involves multiple developers, teams, and systems.
-- Components are created by contributors both inside and outside your organization.
-- Attackers target components with vulnerabilities to gain access and insert
-  malicious code into an organization's software.
+Before anything else, confirm the workspace is working. Run this:
 
-Given all that, **every company needs to:**
+```bash terminal-id=main
+docker version --format 'Docker {{.Server.Version}} ready'
+```
 
-1. **Know what software they're running.**
-2. **Know what risks that software has.**
-3. **Fix those risks quickly.**
+You should see a version string. If you do not, the workspace has not finished
+starting — wait a few seconds and run it again.
 
-Every stage of the chain — from **Producer → Source → Build → Package → Consumer** —
-is a place an artifact can be compromised, manipulated, tampered with, or served
-stale. The questions you need answerable at each hop:
+Now look at what you are working with:
 
-| Producer | Source | Build | Dependencies | Package | Consumer |
-|----------|--------|-------|--------------|---------|----------|
-| Who? | Compromised? | Tampered? | Genuine? | Altered? | Old? |
+```bash terminal-id=main
+ls
+```
 
-*Adapted from slsa.dev/spec/v1.0/threats-overview*
+That is the Product Catalog service: a REST API over a product database, backed by
+PostgreSQL. Open :fileLink[package.json]{path="package.json"} if you want to see what
+it depends on.
 
----
-
-## The three standards you need to know
-
-Three attestations make those questions answerable:
-
-| Standard | The question it answers | What it solves |
-|----------|------------------------|----------------|
-| **SBOM** | What's in this software artifact? | Know every component in every image |
-| **VEX** | Which CVEs actually affect me? | Cut CVE noise to the reachable few |
-| **SLSA** | Where did it come from — can I verify it? | Prove provenance wasn't tampered with |
-
-Docker Hardened Images ship all three, plus a digital signature, out of the box.
-You'll generate, inspect, and verify each of them in the labs.
-
----
-
-## What you will do in this workshop
-
-| Lab | Task | Time |
-|-----|------|------|
-| **Lab 1** | Migrate `catalog-service-node` from `node:20` to DHI — watch the CVE count collapse | ~20 min |
-| **Lab 2** | Generate an SBOM, inspect VEX + SLSA attestations, verify the digital signature | ~20 min |
-| **Lab 3** | Wire Docker Scout + Cosign into a Gitea Actions pipeline — watch a build fail, then pass | ~45 min |
-| **Lab 4** | Build a Python MCP server on `hardened-python`, run it hardened, verify it | ~30 min |
-
-> **Key numbers you will reproduce:**
-> - `node:20` → ~140+ CVEs, 700+ packages
-> - DHI node runtime → **0 critical/high CVEs, ~12 packages**
-> - Image size: **up to 95% smaller**
-
-Let's get started. 🚀
+Continue to **Setup**.

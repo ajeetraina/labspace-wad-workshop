@@ -1,41 +1,42 @@
 metadata:
-  id: ajeetraina/labspace-agentic-security
-  sourceRepo: github.com/ajeetraina/labspace-agentic-security
-  contentVersion: v1.0.0
+  id: securing-the-agentic-stack
+  sourceRepo: github.com/ajeetraina/labspace-wad-workshop
+  contentVersion: 1.0.0
 
-title: "Securing the Agentic Stack: Docker Hardened Images & Supply Chain Security"
-description: |
-  A 90-minute hands-on workshop covering supply chain security fundamentals
-  (SBOM, VEX, SLSA) and applying them to both traditional container workloads
-  and agentic MCP servers. Uses the catalog-service-node app as the running
-  example throughout.
+title: "Securing the Agentic Stack"
+description: >
+  Take one real application from an image an AI agent built without supervision to a
+  signed, attested, policy-gated artifact - then extend the same guarantees to the
+  tools your agent calls.
 
 sections:
   - title: Introduction
     contentPath: 01-introduction.md
-  - title: Prerequisites & Setup
+  - title: Setup
     contentPath: 02-setup.md
-  - title: "Lab 1 — Standard Image vs Docker Hardened Images"
-    contentPath: 03-lab-migrate-dhi.md
-  - title: "Lab 2 — Secure Software Supply Chain (SBOM · VEX · SLSA)"
-    contentPath: 04-lab-sbom-attestations.md
-  - title: "Lab 3 — Securing Your CI Pipeline"
-    contentPath: 05-lab-ci-policy.md
-  - title: "Lab 4 — Securing the Agentic Stack (MCP on DHI)"
-    contentPath: 06-lab-mcp-dhi.md
-  - title: Conclusion & Next Steps
-    contentPath: 07-conclusion.md
+  - title: "An Agent Built This"
+    contentPath: 03-demo-agent-builds-it.md
+  - title: "Lab 1 - What Is In It? SBOM, VEX, SLSA"
+    contentPath: 04-lab-sbom-vex-slsa.md
+  - title: "Lab 2 - Start From a Trusted Base"
+    contentPath: 05-lab-dhi-migration.md
+  - title: "Lab 3 - Sign It, Then Gate It"
+    contentPath: 06-lab-ci-policy.md
+  - title: "Lab 4 - Securing the Agentic Stack"
+    contentPath: 07-lab-mcp-dhi.md
+  - title: "Conclusion"
+    contentPath: 08-conclusion.md
 
 services:
   - id: app
+    title: Catalog API
     url: http://localhost:3050
-    title: App
-    icon: draft
+    icon: inventory_2
   - id: gitea
-    url: http://git.dockerlabs.xyz
     title: Gitea
+    url: http://git.dockerlabs.xyz
     icon: account_tree
   - id: registry
-    url: http://registry.dockerlabs.xyz
     title: Registry
-    icon: inventory_2
+    url: http://registry.dockerlabs.xyz
+    icon: storage
