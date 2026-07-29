@@ -1,0 +1,24 @@
+services:
+  mcp-server:
+    build: .
+    image: ${DOCKERHUB_USERNAME:-myorg}/mcp-server:v1
+    ports:
+      - "8080:8080"
+    # ── Runtime hardening ─────────────────────────────────────────────
+    read_only: true           # filesystem is immutable at runtime
+    cap_drop:
+      - ALL                   # drop every Linux capability
+    security_opt:
+      - no-new-privileges:true  # SUID binaries cannot gain privileges
+    tmpfs:
+      - /tmp:noexec,nosuid,size=32m  # in-memory writable area, not executable
+    # ─────────────────────────────────────────────────────────────────
+    environment:
+      MCP_TRANSPORT: sse
+      MCP_HOST: "0.0.0.0"
+      MCP_PORT: "8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

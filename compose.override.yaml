@@ -1,0 +1,11 @@
+services:
+  configurator:
+    environment:
+      PROJECT_CLONE_URL: https://github.com/dockersamples/catalog-service-node
+
+  # workspace:
+  #   image: dockersamples/labspace-workspace-node
+  #   ports: !override
+  #     - "3000:3000"   # catalog-service backend
+  #     - "3050:3050"   # demo app
+  #     - "8080:8080"   # MCP server

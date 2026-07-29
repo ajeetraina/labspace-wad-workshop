@@ -1,0 +1,65 @@
+# docker-scout-policy.yaml
+# Place this file at the root of your repo and reference it in your Scout org settings.
+# Docs: https://docs.docker.com/scout/policy/
+
+version: "1"
+
+policies:
+
+  # ── Vulnerability gates ────────────────────────────────────────────
+  - name: no-critical-cves
+    description: Block images with any critical-severity CVEs
+    type: vulnerability
+    severity: critical
+    action: fail
+
+  - name: no-high-cves
+    description: Block images with any high-severity CVEs
+    type: vulnerability
+    severity: high
+    action: fail
+
+  # ── Attestation requirements ───────────────────────────────────────
+  - name: require-sbom
+    description: Every image must have a signed SBOM attestation
+    type: attestation
+    attestation: sbom
+    action: fail
+
+  - name: require-provenance
+    description: Every image must have SLSA provenance
+    type: attestation
+    attestation: slsa-provenance
+    action: fail
+
+  # ── Base image hygiene ────────────────────────────────────────────
+  - name: no-outdated-base
+    description: Base image must have been updated in the last 30 days
+    type: base-image
+    max-age: 30d
+    action: fail
+
+  - name: approved-base-images
+    description: Only Docker Hardened Images or approved bases allowed
+    type: base-image
+    allowed-prefixes:
+      - "dhi.io/"
+      - "docker.io/docker/hardened-"
+    action: fail
+
+  # ── Runtime security ──────────────────────────────────────────────
+  - name: non-root-user
+    description: Image must run as a non-root user
+    type: user
+    require-non-root: true
+    action: fail
+
+  # ── License compliance ────────────────────────────────────────────
+  - name: no-agpl-licenses
+    description: Block images containing AGPL v3 licensed packages
+    type: license
+    forbidden-licenses:
+      - AGPL-3.0
+      - AGPL-3.0-only
+      - AGPL-3.0-or-later
+    action: fail
